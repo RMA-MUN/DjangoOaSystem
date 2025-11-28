@@ -30,8 +30,8 @@
 
 ## 项目运行结果展示
 ![项目运行截图](home.png)
-!(staff_list.png)
-!(attendance.png)
+![项目运行截图](staff_list.png)
+![项目运行截图](attendance.png)
 
 ## 功能模块
 
