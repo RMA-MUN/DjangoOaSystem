@@ -1,4 +1,4 @@
-# OA系统前端项目
+<img width="591" height="185" alt="image" src="https://github.com/user-attachments/assets/8d9c4bc2-b0c5-4b34-babe-eb2592eb3bbd" /># OA系统前端项目
 
 这是一个基于Vue 3的办公自动化系统前端项目，提供员工管理、考勤管理、通知管理等功能。
 
@@ -19,19 +19,14 @@
 - Node.js: ^20.19.0 或 >=22.12.0
 - npm: 推荐使用最新版本
 
-## 项目克隆
 
-```bash
-# 克隆项目到本地
-git clone <项目仓库地址>
-
-# 进入项目目录
-cd oa-vue-project
-```
 
 ## 安装依赖
 
 ```bash
+# 进入项目目录
+cd oa-vue-project
+
 # 使用npm安装依赖
 npm install
 
