@@ -1,0 +1,56 @@
+/* 员工添加页面样式 */
+.staff-add-container {
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.content-wrapper {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+.form-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.staff-form {
+  padding: 0 20px 20px;
+}
+
+.form-item {
+  margin-bottom: 24px;
+}
+
+.form-input {
+  width: 100%;
+}
+
+.readonly-input {
+  background-color: #f5f7fa;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.submit-button {
+  margin-right: 10px;
+}

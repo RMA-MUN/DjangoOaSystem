@@ -1,0 +1,211 @@
+/* 对frame.vue里的aside进行样式优化 */
+.aside {
+  background-color: #3e4248;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.container {
+  height: 100vh;
+  background-color: #aea8a8;
+}
+
+.header {
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main {
+  background-color: #e8e8e8;
+}
+
+.brand {
+  display: block;
+  padding: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  background-color: #22252a;
+}
+
+.menu {
+  background-color: #3e4248;
+}
+
+.el-menu {
+  border-right: none;
+}
+
+/* 侧边栏过渡动画 */
+.slide-enter-active,
+.slide-leave-active {
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  overflow: hidden;
+}
+
+/* 确保侧边栏内部元素也有过渡效果 */
+.aside {
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+/* 确保品牌名称有过渡效果 */
+.brand span {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+  display: inline-block;
+}
+
+/* 确保菜单项文本有过渡效果 */
+.el-menu-item span,
+.el-sub-menu .el-sub-menu__title span {
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+  display: inline-block;
+}
+
+/* 确保图标区域有过渡效果 */
+.el-menu {
+  transition: width 0.3s ease;
+}
+
+/* 确保折叠按钮有过渡效果 */
+.CollapseBtn {
+  transition: all 0.3s ease;
+}
+
+.example-showcase .el-dropdown-link {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  display: flex;
+  align-items: center;
+}
+
+.UsernameInfo {
+  display: flex;
+  align-items: center;
+  float: right;
+  margin-top: 13px;
+}
+
+/* 个人信息对话框样式 */
+.profile-content {
+  padding: 10px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.profile-card {
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.card-header {
+  font-weight: 600;
+  color: #303133;
+  font-size: 16px;
+}
+
+.card-content {
+  padding-top: 10px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.info-col {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.info-col:last-child {
+  margin-right: 0;
+}
+
+/* 确保文字对齐 */
+.info-text {
+  font-size: 14px;
+  color: #606266;
+  line-height: 2;
+  display: inline-block;
+  width: 100%;
+  text-align: left;
+}
+
+.info-text.primary {
+  color: #303133;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+/* 表单项内容区域对齐 */
+.el-form-item__content {
+  text-align: left;
+}
+
+/* 标签对齐 */
+.el-form-item__label {
+  text-align: right !important;
+  vertical-align: middle;
+}
+
+/* 美化标签样式 */
+.el-tag {
+  margin-right: 5px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+
+/* 响应式调整 */
+@media (max-width: 576px) {
+  .info-row {
+    flex-direction: column;
+  }
+  
+  .info-col {
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+  
+  .info-col:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 美化滚动条 */
+.profile-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.profile-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.profile-content::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 3px;
+}
+
+.profile-content::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}

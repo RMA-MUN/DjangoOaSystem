@@ -1,0 +1,166 @@
+.title-section {
+  padding: 20px 0;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.inform-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.meta-section {
+  background-color: #f5f7fa;
+  padding: 15px 20px;
+  border-radius: 6px;
+  margin-bottom: 25px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-item:last-child {
+  margin-bottom: 0;
+}
+
+.meta-label {
+  font-weight: 500;
+  color: #606266;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.meta-value {
+  color: #303133;
+  flex: 1;
+  font-size: 14px;
+}
+
+.departments-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  align-items: center;
+}
+
+.department-tag {
+  margin-bottom: 4px;
+}
+
+.content-section {
+  padding: 10px 20px;
+}
+
+.content-body {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #303133;
+  word-break: break-word;
+  min-height: 200px;
+}
+
+/* 基础富文本内容样式 - 确保HTML标签样式能正确显示 */
+.content-body {
+  /* 基础设置 */
+  font-size: 16px;
+  line-height: 1.8;
+  color: #303133;
+  word-break: break-word;
+  min-height: 200px;
+  padding: 10px 0;
+}
+
+/* 保持HTML标签默认样式，确保颜色、斜体等能正确显示 */
+.content-body :deep(*[style*="color"]),
+.content-body :deep(font[color]),
+.content-body :deep(span[style]) {
+  /* 确保内联样式优先级最高 */
+  all: revert;
+}
+
+/* 基本文本格式元素使用浏览器默认样式 */
+.content-body :deep(b),
+.content-body :deep(strong),
+.content-body :deep(i),
+.content-body :deep(em),
+.content-body :deep(u),
+.content-body :deep(s),
+.content-body :deep(del),
+.content-body :deep(ins),
+.content-body :deep(sup),
+.content-body :deep(sub) {
+  all: revert;
+}
+
+/* 确保标题和段落有基本间距 */
+.content-body :deep(h1),
+.content-body :deep(h2),
+.content-body :deep(h3),
+.content-body :deep(h4),
+.content-body :deep(h5),
+.content-body :deep(h6) {
+  margin: 16px 0 8px 0;
+  font-weight: bold;
+  line-height: 1.4;
+}
+
+.content-body :deep(p) {
+  margin: 12px 0;
+  line-height: 1.8;
+}
+
+/* 列表基本样式 */
+.content-body :deep(ul),
+.content-body :deep(ol) {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.content-body :deep(li) {
+  margin: 4px 0;
+}
+
+/* 图片和表格基本样式 */
+.content-body :deep(img) {
+  /* 添加更严格的尺寸限制 */
+  max-width: 80%; /* 限制最大宽度为容器的80% */
+  max-height: 400px; /* 限制最大高度为400px */
+  height: auto;
+  margin: 15px auto; /* 水平居中显示 */
+  display: block; /* 确保margin: auto生效 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
+  border-radius: 4px; /* 添加圆角 */
+  transition: transform 0.3s ease; /* 添加悬停效果 */
+}
+
+/* 鼠标悬停时轻微放大，增强交互体验 */
+.content-body :deep(img:hover) {
+  transform: scale(1.02);
+}
+
+.content-body :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.content-body :deep(th),
+.content-body :deep(td) {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+/* 确保超链接样式可见 */
+.content-body :deep(a) {
+  color: blue;
+  text-decoration: underline;
+}

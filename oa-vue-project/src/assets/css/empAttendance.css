@@ -1,0 +1,13 @@
+.approval-info {
+  line-height: 1.8;
+}
+
+.info-item {
+  margin-bottom: 10px;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}

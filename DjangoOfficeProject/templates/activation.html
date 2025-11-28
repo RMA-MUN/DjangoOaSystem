@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>欢迎使用Django办公系统 - 邮箱激活</title>
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 全局字体和颜色 - 低调柔和 */
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f8f9fa; /* 浅灰背景，替代深色渐变 */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        /* 卡片容器 - 弱化阴影和边框 */
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px; /* 减小圆角，更低调 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* 弱化阴影 */
+            padding: 35px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+            border: 1px solid #eee; /* 淡色边框增加质感 */
+        }
+
+        /* 标题样式 - 降低饱和度 */
+        h1 {
+            color: #495057; /* 深灰色替代黑色 */
+            margin-bottom: 12px;
+            font-weight: 500; /* 降低字重 */
+            font-size: 22px;
+        }
+
+        p {
+            color: #6c757d; /* 中灰色 */
+            margin-bottom: 28px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* 表单样式 - 更简洁 */
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        label {
+            color: #495057;
+            font-weight: 400; /* 常规字重 */
+            font-size: 14px;
+            display: block;
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ced4da; /* 淡灰色边框 */
+            border-radius: 6px; /* 减小圆角 */
+            font-size: 15px;
+            transition: all 0.2s ease;
+            background-color: #ffffff;
+            color: #333;
+        }
+
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #86909c; /* 低调的聚焦色 */
+            box-shadow: 0 0 0 3px rgba(134, 144, 156, 0.1); /* 弱化聚焦阴影 */
+        }
+
+        /* 主要按钮样式 - 优化低调设计 */
+        #submitButton {
+            background-color: #5c636a; /* 略微加深的灰色，提升辨识度 */
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 13px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease-in-out;
+            margin-top: 12px;
+            width: 100%;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        #submitButton:hover {
+            background-color: #4a5056; /* hover时适度加深 */
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.09); /* 轻微提升阴影 */
+            opacity: 0.95;
+        }
+
+        #submitButton:active {
+            background-color: #3f4448; /* 点击时进一步加深 */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07); /* 减小阴影 */
+        }
+
+        #submitButton:disabled {
+            background-color: #adb5bd; /* 禁用状态颜色 */
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.8;
+        }
+
+        /* 弹窗按钮样式 - 与主按钮保持一致 */
+        .modal-button {
+            background-color: #5c636a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 11px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease-in-out;
+            letter-spacing: 0.3px;
+        }
+
+        .modal-button:hover {
+            background-color: #4a5056;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.09);
+        }
+
+        .modal-button:active {
+            background-color: #3f4448;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.07);
+        }
+
+        /* 页脚样式 - 更融入背景 */
+        .footer {
+            margin-top: 25px;
+            color: #6c757d; /* 灰色文字 */
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        /* 加载动画 - 保持简洁 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px); /* 减小位移 */
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 18px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            input[type="email"],
+            input[type="password"] {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            #submitButton {
+                padding: 12px 14px;
+                font-size: 14px;
+                margin-top: 10px;
+            }
+
+            .modal-button {
+                padding: 10px 20px;
+                font-size: 13px;
+            }
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            margin-bottom: 16px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .success-message {
+            color: #28a745;
+        }
+
+        .error-message {
+            color: #dc3545;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: center;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>邮箱激活</h1>
+    <p>请输入您的邮箱和密码完成账户激活</p>
+
+    <!-- 移除了form的action属性，防止任何默认提交行为 -->
+    <form id="activationForm" method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="email">邮箱地址</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">初始密码</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <button type="button" id="submitButton">验证</button>
+    </form>
+</div>
+
+<div class="footer">
+    &copy; Django办公系统 - 激活页面
+</div>
+
+<!-- 弹窗 -->
+<div id="responseModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">操作结果</h3>
+        </div>
+        <div class="modal-body" id="modalMessage"></div>
+        <div class="modal-footer">
+            <button id="modalButton" class="modal-button">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 页面加载完成后，自动聚焦到邮箱输入框
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('email').focus();
+
+        // 获取表单和弹窗元素
+        const form = document.getElementById('activationForm');
+        const submitButton = document.getElementById('submitButton');
+        const modal = document.getElementById('responseModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalButton = document.getElementById('modalButton');
+
+        // 使用按钮点击事件而不是表单提交事件
+        submitButton.addEventListener('click', function() {
+            // 禁用按钮防止重复提交
+            submitButton.disabled = true;
+            submitButton.textContent = '验证中...';
+
+            // 收集表单数据
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            // 获取CSRF令牌
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // 手动指定URL，确保使用正确的激活URL
+            const activateUrl = "{% url 'activate_email' %}";
+
+            // 发送AJAX请求
+            fetch(activateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应错误');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 恢复按钮状态
+                    submitButton.disabled = false;
+                    submitButton.textContent = '验证';
+
+                    // 显示弹窗
+                    modal.style.display = 'flex';
+
+                    // 根据返回数据设置弹窗内容
+                    if (data.message) {
+                        modalTitle.textContent = '成功';
+                        modalMessage.textContent = data.message;
+                        modalMessage.className = 'modal-body success-message';
+                    } else if (data.error_message) {
+                        modalTitle.textContent = '错误';
+                        modalMessage.textContent = data.error_message;
+                        modalMessage.className = 'modal-body error-message';
+                    }
+                })
+                .catch(error => {
+                    // 恢复按钮状态
+                    submitButton.disabled = false;
+                    submitButton.textContent = '验证';
+
+                    // 处理请求错误
+                    modal.style.display = 'flex';
+                    modalTitle.textContent = '错误';
+                    modalMessage.textContent = '请求失败，请检查是否输入正确';
+                    modalMessage.className = 'modal-body error-message';
+                    console.error('Error:', error);
+                });
+        });
+
+        // 弹窗按钮点击事件
+        modalButton.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+    });
+</script>
+
+</body>
+</html>

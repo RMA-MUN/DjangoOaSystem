@@ -1,0 +1,79 @@
+/* 图表容器样式 */
+.staff-chart-container {
+    width: 1000px;
+    height: 300px;
+}
+
+/* 列表容器样式 */
+.list-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* 列表卡片通用样式 */
+.list-card {
+    width: 48%;
+    height: auto;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+}
+
+/* 列表标题样式 */
+.list-title {
+    padding: 15px;
+    border-bottom: 1px solid #ebeef5;
+}
+
+.list-title h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+/* 列表内容样式 */
+.list-content {
+    padding: 15px;
+}
+
+/* 通知项样式 */
+.inform-item {
+    margin-bottom: 15px;
+}
+
+.inform-link {
+    text-decoration: none;
+    color: #409eff;
+}
+
+.inform-title {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.inform-text {
+    font-size: 14px;
+    color: #606266;
+    line-height: 1.5;
+}
+
+.inform-date {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 8px;
+}
+
+/* 空数据提示样式 */
+.empty-tip {
+    padding: 30px;
+    text-align: center;
+    color: #909399;
+}
+
+/* 卡片样式 */
+.card-container {
+    margin: 20px;
+}

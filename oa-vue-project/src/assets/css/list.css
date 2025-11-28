@@ -1,0 +1,8 @@
+:deep(.el-tag) {
+    cursor: pointer;
+}
+
+.department-tag {
+    margin-bottom: 4px;
+    color: #409eff;
+}

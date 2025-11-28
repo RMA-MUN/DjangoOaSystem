@@ -1,0 +1,131 @@
+.staff-list-container {
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.content-wrapper {
+  max-width: 1400px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+
+.department-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.department-col {
+  margin-bottom: 24px;
+}
+
+.department-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  margin-bottom: 8px;
+}
+
+.department-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.department-leader {
+  font-size: 14px;
+  color: #606266;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .department-grid {
+    margin-left: -10px;
+    margin-right: -10px;
+  }
+
+  .department-col {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 0 10px;
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .department-leader {
+    font-size: 12px;
+  }
+}
+
+/* 加载、错误和空状态样式 */
+.loading-skeleton,
+.error-alert,
+.empty-data {
+  margin: 20px 0;
+}
+
+.error-alert {
+  margin-bottom: 20px;
+}
+
+/* 表格样式优化 */
+:deep(.el-table) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.el-table__body-wrapper) {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.el-table th) {
+  font-weight: 600;
+  background-color: #fafafa;
+  text-align: left;
+}
+
+:deep(.el-table td) {
+  padding: 4px 2px;
+  /* 所有单元格内容靠左对齐 */
+  text-align: left;
+}
+
+/* 确保单元格内的内容也靠左对齐 */
+:deep(.el-table__cell) {
+  text-align: left;
+}
+
+/* 确保单元格内的div内容也靠左对齐 */
+:deep(.el-table__cell .cell) {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+/* 领导标签样式优化 */
+:deep(.el-tag--success.is-plain) {
+  color: #67c23a;
+  border-color: #e1f3d8;
+  background-color: #f0f9eb;
+}

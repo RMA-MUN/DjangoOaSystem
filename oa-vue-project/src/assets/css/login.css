@@ -1,0 +1,352 @@
+/* 登录页面样式 - 与Element Plus风格匹配 */
+:root {
+  /* 匹配Element Plus的主题色 */
+  --el-color-primary: #409eff;
+  --el-color-success: #67c23a;
+  --el-color-warning: #e6a23c;
+  --el-color-danger: #f56c6c;
+  --el-color-info: #909399;
+  
+  /* 背景和卡片颜色 */
+  --bg-color: #f5f7fa;
+  --card-bg: #ffffff;
+  
+  /* 文本颜色 */
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  
+  /* 边框颜色 */
+  --border-color: #dcdfe6;
+  --border-hover: #c6e2ff;
+  
+  /* 阴影 */
+  --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  --shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 全局重置和基础样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+/* 登录容器 - 简洁背景和居中 */
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  padding: 20px;
+}
+
+/* 登录卡片 - 符合Element Plus风格 */
+.form-signin {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+}
+
+.form-signin:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 聚焦状态 */
+.form-signin .form-floating:focus-within {
+  z-index: 2;
+}
+
+/* 表单元素样式 - 符合Element Plus设计规范 */
+.form-signin .form-group {
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.form-signin .form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 表单输入框样式 */
+.form-signin .form-control,
+.form-signin input[type='text'],
+.form-signin input[type='password'] {
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0 12px;
+  transition: all 0.3s ease;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* 输入框悬停效果 */
+.form-signin .form-control:hover:not(:disabled):not([readonly]) {
+  border-color: var(--el-color-primary);
+}
+
+/* 输入框聚焦效果 */
+.form-signin .form-control:focus {
+  outline: none;
+  border-color: var(--el-color-primary) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+}
+
+/* 输入框禁用效果 */
+.form-signin .form-control:disabled,
+.form-signin .form-control[readonly] {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #c0c4cc;
+}
+
+/* 响应式调整 */
+@media (max-width: 480px) {
+  .form-signin .form-control {
+    height: 45px;
+    font-size: 15px;
+    padding: 10px 12px;
+  }
+}
+
+.form-signin .form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.form-floating > .form-control:focus ~ label {
+  color: #848589;
+  transform: translateY(-10px) scale(0.85);
+}
+
+.form-floating > label {
+  padding: 1rem 0.75rem;
+  transition: all 0.3s ease;
+  color: var(--text-secondary);
+}
+
+/* 输入框间距 */
+.form-signin .form-floating,
+.form-signin .mb-4 {
+  margin-bottom: 2rem !important;
+}
+
+/* 复选框样式 */
+.checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  accent-color: var(--success-color);
+  cursor: pointer;
+}
+
+.checkbox label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.checkbox label:hover {
+  color: var(--text-primary);
+}
+
+#forgotPasswordButton:hover {
+  color: #a78bfa;
+  transform: scale(1.05);
+  display: inline-block;
+}
+
+/* 登录按钮样式 - 符合Element Plus设计规范 */
+.form-signin .btn-primary,
+.form-signin button[type='submit'] {
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  background-color: var(--el-color-primary);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 按钮悬停效果 */
+.form-signin .btn-primary:hover:not(:disabled),
+.form-signin button[type='submit']:hover:not(:disabled) {
+  background-color: var(--el-color-primary-light-3);
+}
+
+/* 按钮点击效果 */
+.form-signin .btn-primary:active {
+  background-color: var(--el-color-primary-dark-2);
+}
+
+/* 按钮禁用效果 */
+.form-signin .btn-primary:disabled,
+.form-signin button[type='submit']:disabled {
+  background-color: var(--el-color-primary-light-5);
+  cursor: not-allowed;
+}
+
+/* Logo样式 */
+.login-logo {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 35px;
+  border-radius: 50%;
+  padding: 15px;
+  background-color: var(--logo-bg);
+  border: 3px solid var(--card-bg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.login-logo:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+/* 标题样式 - 符合Element Plus设计规范 */
+.login-title {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* 消息提示样式 - 符合Element Plus设计规范 */
+.error-message,
+.success-message {
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: center;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  animation: slideIn 0.3s ease;
+}
+
+.error-message {
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+  border: 1px solid var(--el-color-danger-light-7);
+}
+
+.success-message {
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success);
+  border: 1px solid var(--el-color-success-light-7);
+}
+
+/* 版权信息 */
+.form-signin > p:last-child {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 简单的动画效果 - 符合Element Plus简约风格 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 - 符合Element Plus规范 */
+@media (max-width: 768px) {
+  .form-signin {
+    padding: 24px;
+    max-width: 100%;
+    margin: 0 16px;
+    box-sizing: border-box;
+  }
+  
+  .login-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+  
+  .form-signin {
+    padding: 20px;
+    margin: 0;
+  }
+  
+  .login-title {
+    font-size: 18px;
+    margin-bottom: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-signin .form-control,
+  .form-signin .btn-primary,
+  .form-signin input[type='text'],
+  .form-signin input[type='password'],
+  .form-signin button[type='submit'] {
+    height: 40px;
+    font-size: 14px;
+  }
+}
