@@ -142,7 +142,7 @@ oa-vue-project/
 ### 1. 克隆项目
 
 ```bash
-git clone <项目仓库地址>
+git clone https://github.com/RMA-MUN/DjangoOaSystem
 cd OAProject
 ```
 
