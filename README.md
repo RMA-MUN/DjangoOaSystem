@@ -29,7 +29,7 @@
 - **代码格式化**: Prettier
 
 ## 项目运行结果展示
-!(home.png)  
+![项目运行截图](home.png)
 !(staff_list.png)
 !(attendance.png)
 
