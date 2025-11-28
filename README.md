@@ -28,6 +28,11 @@
 - **CSS框架**: Bootstrap
 - **代码格式化**: Prettier
 
+## 项目运行结果展示
+!(home.png)  
+!(staff_list.png)
+!(attendance.png)
+
 ## 功能模块
 
 ### 1. 用户认证系统 (officeAuth)
