@@ -88,7 +88,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'django_oa',
         'USER': 'root',
-        'PASSWORD': '060517',
+        'PASSWORD': 'password',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -99,9 +99,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.qq.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = '3032747608@qq.com'
-EMAIL_HOST_PASSWORD = 'towdlwmsfbaydggj'
-DEFAULT_FROM_EMAIL = '3032747608@qq.com'
+EMAIL_HOST_USER = 'your_eamil@qq.com'
+EMAIL_HOST_PASSWORD = 'your_email_token' # 你的邮箱授权码
+DEFAULT_FROM_EMAIL = 'your_email@qq.com'
 
 # Celery 配置
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
