@@ -11,7 +11,7 @@ djangorestframework==3.15.2  # Django REST Framework
 djangorestframework-simplejwt==5.3.1  # JWT认证
 
 # 跨域支持
-corsheaders==4.3.0  # CORS中间件
+django-cors-headers==4.3.0  # CORS中间件
 
 # 异步任务处理
 celery==5.4.0  # Celery任务队列

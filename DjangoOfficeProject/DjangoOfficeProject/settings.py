@@ -100,7 +100,7 @@ EMAIL_HOST = 'smtp.qq.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = '3032747608@qq.com'
-EMAIL_HOST_PASSWORD = 'towdlwmsfbaydggj'
+EMAIL_HOST_PASSWORD = 'towdlwmsfbaydggj' 
 DEFAULT_FROM_EMAIL = '3032747608@qq.com'
 
 # Celery 配置
