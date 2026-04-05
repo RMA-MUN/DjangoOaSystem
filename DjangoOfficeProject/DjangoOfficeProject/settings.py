@@ -11,11 +11,16 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 from celery import Celery
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -85,27 +90,27 @@ WSGI_APPLICATION = 'DjangoOfficeProject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'django_oa',
-        'USER': 'root',
-        'PASSWORD': '060517',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.mysql'),
+        'NAME': os.environ.get('DB_NAME', 'django_oa'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
 # 邮箱配置
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.qq.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = '3032747608@qq.com'
-EMAIL_HOST_PASSWORD = 'towdlwmsfbaydggj' 
-DEFAULT_FROM_EMAIL = '3032747608@qq.com'
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.qq.com')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '3032747608@qq.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'towdlwmsfbaydggj') 
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '3032747608@qq.com')
 
 # Celery 配置
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/1'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/2'
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/1')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/2')
 # 统一时区设置
 CELERY_TIMEZONE = 'Asia/Shanghai'
 # 启用UTC
@@ -136,7 +141,7 @@ CELERY_RESULT_EXPIRES = 3600
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/3',
+        'LOCATION': os.environ.get('REDIS_CACHE_LOCATION', 'redis://127.0.0.1:6379/3'),
     }
 }
 
