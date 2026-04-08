@@ -54,5 +54,4 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.uv]
-venv.path = ".venv"
 index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
