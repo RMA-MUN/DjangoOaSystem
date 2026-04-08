@@ -99,7 +99,8 @@ class ToolAgent(BaseAgent):
             agent=agent,
             tools=self.tools,
             verbose=True,
-            return_intermediate_steps=True
+            return_intermediate_steps=True,
+            handle_parsing_errors=True
         )
     
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:

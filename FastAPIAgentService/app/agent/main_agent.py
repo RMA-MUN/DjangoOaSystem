@@ -1,4 +1,8 @@
-from typing import Dict, Any
+import json
+import os
+import re
+from typing import Dict, Any, List, Optional
+
 from app.agent.base import BaseAgent, AgentState
 from app.agent.task_decomposer import TaskDecomposer
 from app.agent.agent_router import AgentRouter
@@ -15,6 +19,7 @@ class MainAgent(BaseAgent):
     
     def __init__(self):
         super().__init__("main_agent")
+        self._llm = None  # 惰性创建，用于参数抽取
         self.task_decomposer = TaskDecomposer()
         self.agent_router = AgentRouter()
         self.tool_agent = ToolAgent()
@@ -120,7 +125,7 @@ class MainAgent(BaseAgent):
         """执行子任务"""
         for subtask in self._sort_subtasks(state.task_subtasks or []):
             # 检查参数是否完整（尝试从历史会话和用户输入中提取参数）
-            if not self._check_params_complete(subtask, state):
+            if not await self._check_params_complete(subtask, state):
                 # 如果参数不完整，已经在_check_params_complete中设置了final_response
                 return state
             
@@ -239,112 +244,294 @@ class MainAgent(BaseAgent):
             ordered.extend(sorted(no_id, key=lambda t: (t.get("priority", 9999))))
         return ordered
     
+    def _create_param_extraction_llm(self):
+        """与 TaskDecomposer 一致，用于从上下文抽取结构化参数。"""
+        api_key = os.getenv("ALIYUN_ACCESS_KEY_SECRET")
+        base_url = os.getenv("ALIYUN_BASE_URL")
+        try:
+            from langchain_community.chat_models import ChatTongyi
+        except Exception as e:
+            logger.error(f"【参数抽取】大模型依赖加载失败: {e}", exc_info=True)
+            return None
+        return ChatTongyi(
+            model=os.getenv("MAIN_AGENT_PARAM_MODEL", "qwen3-max"),
+            api_key=api_key,
+            base_url=base_url,
+            temperature=0,
+        )
+
+    def _build_context_for_extraction(self, state: AgentState) -> str:
+        parts: List[str] = []
+        if state.user_input:
+            parts.append(f"【当前用户输入】\n{state.user_input.strip()}")
+        if state.chat_history:
+            lines = []
+            for user_msg, assistant_msg in state.chat_history:
+                if user_msg:
+                    lines.append(f"用户: {user_msg}")
+                if assistant_msg:
+                    lines.append(f"助手: {assistant_msg}")
+            if lines:
+                parts.append("【历史对话】\n" + "\n".join(lines))
+        return "\n\n".join(parts).strip()
+
     def _extract_params_from_text(self, text: str, required_params: list[str]) -> Dict[str, str]:
         """
-        从文本中提取所需参数
-        
-        :param text: 待提取的文本（用户输入或历史会话）
-        :param required_params: 需要提取的参数列表
-        :return: 提取到的参数字典
+        轻量规则提取（不调用 LLM）。用于常见中文场景与单元测试。
         """
-        extracted_params = {}
-        
-        # 参数提取规则映射
+        extracted_params: Dict[str, str] = {}
+
+        # 提取 JWT token
+        import re
+        token_pattern = r'JWT token：([\w\-\.]+)'
+        token_match = re.search(token_pattern, text)
+        if token_match:
+            token = token_match.group(1)
+            # 检查是否需要 token 参数
+            for param in required_params:
+                if "token" in param.lower():
+                    extracted_params[param] = token
+                    break
+            # 额外添加 token 参数（工具函数期望的参数名）
+            if "token" in required_params:
+                extracted_params["token"] = token
+            elif "jwt_token" in extracted_params:
+                # 如果提取的是 jwt_token，但工具需要 token，进行映射
+                extracted_params["token"] = extracted_params["jwt_token"]
+
+        # 参数名关键词 -> 触发词 / 正则补充
         param_patterns = {
-            "日期": ["日期", "时间", "什么时候", "哪天", "几号"],
-            "地点": ["地点", "在哪里", "位置", "地址"],
-            "姓名": ["姓名", "名字", "叫什么"],
+            "日期": ["日期", "时间", "什么时候", "哪天", "几号", "从", "到", "开始", "结束"],
+            "时间": ["时间", "几点", "时分", "什么时候"],
+            "地点": ["地点", "在哪里", "位置", "地址", "会议室", "在"],
+            "姓名": ["姓名", "名字", "叫什么", "申请人", "审批人"],
             "数量": ["数量", "多少", "几个"],
             "金额": ["金额", "价格", "费用", "多少钱"],
             "主题": ["主题", "标题", "内容"],
-            "类型": ["类型", "种类", "类别"],
+            "类型": ["类型", "种类", "类别", "假别", "考勤类型"],
             "状态": ["状态", "情况", "进度"],
             "部门": ["部门", "科室", "团队"],
             "项目": ["项目", "任务", "事项"],
+            "token": ["token", "JWT", "认证", "授权"],
         }
-        
+
+        punct = ["，", "。", "！", "？", "；", "：", ",", ".", "!", "?", ";", ":"]
+
+        def _clip(s: str) -> str:
+            s = s.strip()
+            for p in punct:
+                if p in s:
+                    s = s[: s.find(p)].strip()
+            return s
+
+        # 全文：相对日期/时间（优先匹配「明天下午3点」这类完整片段，避免只命中「明天」）
+        if any("日期" in p or "时间" in p for p in required_params):
+            m = re.search(
+                r"(?:明天|后天|大后天|今天|昨天)(?:上午|下午|晚上|中午|早间)?\s*\d{1,2}\s*[:：点]\s*\d{0,2}|"
+                r"(?:明天|后天|大后天|今天|昨天|下周|本周|周[一二三四五六日]|"
+                r"\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日号]?|"
+                r"\d{1,2}月\d{1,2}[日号]?|"
+                r"(?:上午|下午|晚上|中午)?\s*\d{1,2}\s*[:：点]\s*\d{0,2})",
+                text,
+            )
+            if m:
+                for rp in required_params:
+                    if ("日期" in rp or "时间" in rp) and rp not in extracted_params:
+                        extracted_params[rp] = _clip(m.group(0))
+
+        # 地点：取「开会/举行」前最后一个「在」后面的片段，避免「我想在明天…在会议室A」串台
+        if any("地点" in p or "地址" in p or "位置" in p for p in required_params):
+            for end_kw in ("开会", "举行", "进行", "见面"):
+                if end_kw not in text:
+                    continue
+                before = text[: text.find(end_kw)]
+                last_zai = before.rfind("在")
+                if last_zai == -1:
+                    continue
+                loc = before[last_zai + len("在") :].strip()
+                loc = _clip(loc)
+                if loc:
+                    for rp in required_params:
+                        if (
+                            ("地点" in rp or "地址" in rp or "位置" in rp)
+                            and rp not in extracted_params
+                        ):
+                            extracted_params[rp] = loc
+                break
+
         for param in required_params:
-            # 检查参数是否有明确的提取模式
+            if param in extracted_params:
+                continue
             for pattern_key, patterns in param_patterns.items():
-                if pattern_key in param:
-                    for pattern in patterns:
-                        if pattern in text:
-                            # 简单提取：找到模式后提取后面的内容
-                            start_idx = text.find(pattern)
-                            if start_idx != -1:
-                                # 提取模式后面的内容，直到下一个标点符号或结束
-                                extract_text = text[start_idx + len(pattern):].strip()
-                                # 截断到第一个标点符号
-                                for punctuation in ["，", "。", "！", "？", "；", "：", ",", ".", "!", "?", ";", ":"]:
-                                    if punctuation in extract_text:
-                                        extract_text = extract_text[:extract_text.find(punctuation)].strip()
-                                if extract_text:
-                                    extracted_params[param] = extract_text
-                                    break
-                    if param in extracted_params:
+                if pattern_key not in param:
+                    continue
+                for pattern in patterns:
+                    if pattern not in text:
                         continue
-            
-            # 如果没有找到模式匹配，尝试直接查找参数名称
+                    start_idx = text.find(pattern)
+                    if start_idx == -1:
+                        continue
+                    extract_text = text[start_idx + len(pattern) :].strip()
+                    extract_text = _clip(extract_text)
+                    if extract_text:
+                        extracted_params[param] = extract_text
+                        break
+                if param in extracted_params:
+                    break
+
+            if param in extracted_params:
+                continue
             param_lower = param.lower()
             text_lower = text.lower()
             if param_lower in text_lower:
-                # 提取参数名称后面的内容
                 start_idx = text_lower.find(param_lower)
-                if start_idx != -1:
-                    extract_text = text[start_idx + len(param_lower):].strip()
-                    for punctuation in ["，", "。", "！", "？", "；", "：", ",", ".", "!", "?", ";", ":"]:
-                        if punctuation in extract_text:
-                            extract_text = extract_text[:extract_text.find(punctuation)].strip()
-                    if extract_text:
-                        extracted_params[param] = extract_text
-        
+                extract_text = text[start_idx + len(param_lower) :].strip()
+                extract_text = _clip(extract_text)
+                if extract_text:
+                    extracted_params[param] = extract_text
+
         return extracted_params
 
-    def _check_params_complete(self, subtask: Dict[str, Any], state: AgentState) -> bool:
-        """检查参数是否完整，并尝试从历史会话和用户输入中提取参数"""
-        # 对于 knowledge_query 类型的任务，不需要检查参数是否完整
+    async def _llm_extract_params(
+        self,
+        *,
+        required_params: List[str],
+        subtask_description: str,
+        task_type: str,
+        context: str,
+        merged_so_far: Dict[str, str],
+    ) -> Dict[str, str]:
+        """
+        用大模型从上下文中抽取 required_params 中**尚未出现**的键。
+        返回的 dict 只包含非空字符串值，键必须与 required_params 完全一致。
+        """
+        missing_keys = [k for k in required_params if k not in merged_so_far or not str(merged_so_far.get(k, "")).strip()]
+        if not missing_keys or not context.strip():
+            return {}
+
+        if self._llm is None:
+            self._llm = self._create_param_extraction_llm()
+        if self._llm is None:
+            return {}
+
+        keys_json = json.dumps(missing_keys, ensure_ascii=False)
+        prompt = f"""你是参数抽取助手。根据「上下文」和「子任务说明」，为下列参数名填写取值。
+
+规则：
+1. 只输出一个 JSON 对象，不要 markdown 代码块，不要其它解释。
+2. JSON 的键必须且只能来自下面「待填参数名」列表，键名逐字一致（含空格与标点）。
+3. 若某参数在上下文中**不存在或无法合理推断**，该键的值使用 null（不要编造）。
+4. 日期时间可保留用户原话，或规范为单行字符串。
+5. 若「已有部分参数」中已有某键的非空值，不要覆盖，输出时可省略该键或仍输出相同值。
+
+待填参数名（JSON 的键集合）：
+{keys_json}
+
+子任务类型：{task_type}
+子任务说明：
+{subtask_description}
+
+已有部分参数（不要覆盖）：
+{json.dumps(merged_so_far, ensure_ascii=False)}
+
+上下文：
+{context}
+"""
+        try:
+            from langchain_core.messages import HumanMessage
+
+            msg = await self._llm.ainvoke([HumanMessage(content=prompt)])
+            raw = (msg.content or "").strip()
+            # 去掉可能的 ```json 包裹
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```\s*$", "", raw)
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                return {}
+            out: Dict[str, str] = {}
+            for k in missing_keys:
+                if k not in data:
+                    continue
+                v = data[k]
+                if v is None:
+                    continue
+                if isinstance(v, (dict, list)):
+                    v = json.dumps(v, ensure_ascii=False)
+                s = str(v).strip()
+                if s:
+                    out[k] = s
+            return out
+        except Exception as e:
+            logger.warning(f"【参数抽取】LLM 抽取失败，将沿用规则与已有参数: {e}")
+            return {}
+
+    def _strict_params_enabled(self) -> bool:
+        return os.getenv("MAIN_AGENT_STRICT_REQUIRED_PARAMS", "false").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+    async def _check_params_complete(self, subtask: Dict[str, Any], state: AgentState) -> bool:
+        """检查参数是否完整：先规则、再 LLM；缺参时默认放行给子 Agent（可配置严格拦截）。"""
         task_type = subtask.get("task_type", "")
-        if task_type == "knowledge_query":
+        # 这些类型由子 Agent / 对话本身处理，不在此用 required_params 卡死
+        if task_type in (
+            "knowledge_query",
+            "rag_query",
+            "information_summary",
+            "user_interaction",
+            "memory_management",
+        ):
             return True
-        
-        required_params = subtask.get("required_params", [])
+
+        required_params = subtask.get("required_params") or []
         if not required_params:
             return True
 
-        # 已有 params（来自任务分解或上游补全）
         existing_params = subtask.get("params") or {}
-        
-        # 收集所有可用文本（用户输入 + 历史会话）
-        all_text = state.user_input or ""
-        
-        # 添加历史会话文本
-        if state.chat_history:
-            for user_msg, assistant_msg in state.chat_history:
-                if user_msg:
-                    all_text += " " + user_msg
-                if assistant_msg:
-                    all_text += " " + assistant_msg
-        
-        # 提取参数
-        extracted_params = self._extract_params_from_text(all_text, required_params)
-        
-        # 更新子任务的参数
+        all_text = self._build_context_for_extraction(state)
+
         merged_params = dict(existing_params)
-        if extracted_params:
-            merged_params.update(extracted_params)
-            logger.info(f"【参数提取】从历史和输入中提取到参数: {extracted_params}")
+        heuristic = self._extract_params_from_text(all_text, list(required_params))
+        if heuristic:
+            merged_params.update(heuristic)
+            logger.info(f"【参数提取】规则命中: {heuristic}")
+
+        llm_extra = await self._llm_extract_params(
+            required_params=list(required_params),
+            subtask_description=subtask.get("description") or "",
+            task_type=task_type,
+            context=all_text,
+            merged_so_far=dict(merged_params),
+        )
+        if llm_extra:
+            merged_params.update(llm_extra)
+            logger.info(f"【参数提取】LLM 补充: {llm_extra}")
+
         if merged_params:
             subtask["params"] = merged_params
-        
-        # 检查是否所有参数都已提取到
-        missing_params = [param for param in required_params if param not in merged_params]
-        
-        if missing_params:
-            logger.info(f"【参数检查】缺少参数: {missing_params}")
-            # 设置需要询问的参数
-            state.final_response = f"我需要更多信息来完成任务：{', '.join(missing_params)}"
+
+        missing_params = [
+            p
+            for p in required_params
+            if p not in merged_params or not str(merged_params.get(p, "")).strip()
+        ]
+        if not missing_params:
+            return True
+
+        logger.info(f"【参数检查】仍缺参数: {missing_params}")
+
+        if self._strict_params_enabled():
+            state.final_response = (
+                f"我需要更多信息来完成任务：{', '.join(missing_params)}"
+            )
             return False
-        
+
+        # 默认：不阻断，交给 tool_agent 等用自然语言 + 部分 params 继续推理/调工具
+        logger.warning(
+            "【参数检查】缺参但未启用 STRICT，继续执行子任务；子 Agent 可结合完整描述补全"
+        )
         return True
     
     async def _integrate_results(self, state: AgentState) -> AgentState:
