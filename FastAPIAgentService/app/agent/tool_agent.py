@@ -79,7 +79,15 @@ class ToolAgent(BaseAgent):
                 "大模型客户端不可用，请检查 langchain/通义千问 依赖版本或环境配置"
             ) from e
 
-        llm = ChatTongyi(model="qwen3-max", api_key=api_key, base_url=base_url, temperature=0.3)
+        # 配置通义千问模型，确保工具调用参数格式正确
+        llm = ChatTongyi(
+            model="qwen3-max", 
+            api_key=api_key, 
+            base_url=base_url, 
+            temperature=0.3,
+            # 开启自动工具选择；不强制 json_object，避免 Tongyi 对 messages 的 json 关键词校验报错
+            tool_choice="auto"
+        )
         
         # 创建提示词模板
         system_prompt = load_prompt('main_prompt')
@@ -100,8 +108,7 @@ class ToolAgent(BaseAgent):
             tools=self.tools,
             verbose=True,
             return_intermediate_steps=True,
-            handle_parsing_errors=True
-        )
+            handle_parsing_errors=lambda e: f"Error: {str(e)}. Please make sure to use valid JSON format for tool arguments. For example: {{\"token\": \"your_token_here\"}}")
     
     async def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """处理输入数据，执行工具调用"""
@@ -112,10 +119,14 @@ class ToolAgent(BaseAgent):
             # 每次请求创建全新的 executor，避免跨会话状态污染
             agent_executor = self._create_agent_executor()
 
-            # 构建工具调用输入
+            # 构建工具调用输入 - 使用更简洁的格式避免JSON解析问题
             tool_input = task_description
             if params:
-                tool_input += f"\n参数: {params}"
+                # 将参数转换为更易解析的格式
+                param_str = ", ".join([f"{k}: {v}" for k, v in params.items()])
+                tool_input += f"\n参数: {param_str}"
+            
+            logger.info(f"【工具执行】开始执行工具，输入: {tool_input[:200]}...")
             
             # 执行工具调用
             result = await agent_executor.ainvoke({

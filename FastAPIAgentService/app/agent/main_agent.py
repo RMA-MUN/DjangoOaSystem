@@ -509,6 +509,19 @@ class MainAgent(BaseAgent):
             merged_params.update(llm_extra)
             logger.info(f"【参数提取】LLM 补充: {llm_extra}")
 
+        # 特殊处理：如果需要token参数，尝试从历史对话和用户输入中提取
+        if "token" in [p.lower() for p in required_params]:
+            # 从文本中提取token
+            import re
+            token_pattern = r'JWT token：([\w\-\.]+)|token：([\w\-\.]+)|token=([\w\-\.]+)'
+            token_match = re.search(token_pattern, all_text)
+            if token_match:
+                token = token_match.group(1) or token_match.group(2) or token_match.group(3)
+                for param in required_params:
+                    if "token" in param.lower():
+                        merged_params[param] = token
+                        logger.info(f"【参数提取】从文本中提取token: {token[:20]}...")
+
         if merged_params:
             subtask["params"] = merged_params
 
@@ -518,6 +531,7 @@ class MainAgent(BaseAgent):
             if p not in merged_params or not str(merged_params.get(p, "")).strip()
         ]
         if not missing_params:
+            logger.info(f"【参数检查】所有参数已提取完成: {merged_params}")
             return True
 
         logger.info(f"【参数检查】仍缺参数: {missing_params}")
