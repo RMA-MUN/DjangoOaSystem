@@ -8,7 +8,8 @@ from fastapi.responses import StreamingResponse
 from app.agent.agent import get_agent_stream_response, get_main_agent_stream_response
 from app.router.chat_service import ChatService, get_router_service
 
-from app.schemas.rag_schemas import QueryRequest, RAGResponse, RAGRequest, SessionResponse, ReorderResponse, ReorderRequest
+from app.schemas.rag_schemas import QueryRequest, RAGResponse, RAGRequest, SessionResponse, ReorderResponse, ReorderRequest, ParamExtractionRequest, ParamExtractionResponse
+from app.agent.main_agent import MainAgent
 from app.utils.auth_utils import get_current_user_id
 from app.core.success_response import success_response
 from app.core.rate_limit import rate_limit
@@ -139,3 +140,58 @@ async def reorder_documents(
     """使用Ollama本地的嵌入模型对文档进行中文重排序"""
     sorted_docs = await router_service.handle_reorder(request.query, request.documents)
     return success_response(data=ReorderResponse(documents=sorted_docs))
+
+
+@chat_router.post("/test/param-extraction", response_model=ParamExtractionResponse)
+async def test_param_extraction(
+        request: ParamExtractionRequest,
+        user_id: str = Depends(get_current_user_id),
+        _: None = Depends(rate_limit(limit=10, window=60))
+):
+    """测试参数提取功能"""
+    try:
+        # 创建MainAgent实例
+        main_agent = MainAgent()
+        
+        # 构建测试子任务
+        subtask = {
+            "task_type": "test_param_extraction",
+            "description": f"测试参数提取: {request.user_input}",
+            "required_params": request.required_params,
+            "params": {}
+        }
+        
+        # 构建测试状态
+        from app.agent.base import AgentState
+        state = AgentState()
+        state.user_input = request.user_input
+        state.session_id = "test_session"
+        state.user_id = user_id
+        
+        # 执行参数提取
+        await main_agent._check_params_complete(subtask, state)
+        
+        # 获取提取的参数和缺失的参数
+        extracted_params = subtask.get("params", {})
+        missing_params = [
+            p for p in request.required_params 
+            if p not in extracted_params or not str(extracted_params.get(p, "")).strip()
+        ]
+        
+        # 构建响应
+        status = "success" if not missing_params else "partial"
+        response = ParamExtractionResponse(
+            extracted_params=extracted_params,
+            missing_params=missing_params,
+            status=status
+        )
+        
+        return success_response(data=response)
+    except Exception as e:
+        # 构建错误响应
+        response = ParamExtractionResponse(
+            extracted_params={},
+            missing_params=request.required_params,
+            status=f"error: {str(e)}"
+        )
+        return success_response(data=response)
