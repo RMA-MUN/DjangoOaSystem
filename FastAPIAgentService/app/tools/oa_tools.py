@@ -89,8 +89,14 @@ async def get_attendance_records(token: str, who: Optional[str] = None) -> str:
             response.raise_for_status()
             data = response.json()
             
-            # 验证数据格式
-            if not isinstance(data, list):
+            # 验证数据格式，处理可能的dict格式（如分页响应）
+            if isinstance(data, dict):
+                # 检查是否是分页响应格式
+                if 'results' in data and isinstance(data['results'], list):
+                    data = data['results']
+                else:
+                    return f"获取考勤记录失败: 返回数据格式错误，期望列表或包含results字段的对象，但得到 {type(data).__name__}"
+            elif not isinstance(data, list):
                 return f"获取考勤记录失败: 返回数据格式错误，期望列表但得到 {type(data).__name__}"
             
             if not data:
@@ -257,14 +263,25 @@ async def get_informs(token: str, page: int = 1, page_size: int = 10) -> str:
             data = response.json()
             
             # 验证数据格式
-            if not isinstance(data, dict):
-                return f"获取通知列表失败: 返回数据格式错误，期望对象但得到 {type(data).__name__}"
+            if isinstance(data, dict):
+                # 检查是否是分页响应格式
+                if 'results' in data and isinstance(data['results'], list):
+                    results = data['results']
+                    count = data.get('count', 0)
+                else:
+                    return f"获取通知列表失败: 返回数据格式错误，期望包含results字段的对象，但得到 {type(data).__name__}"
+            elif isinstance(data, list):
+                # 直接返回列表格式
+                results = data
+                count = len(data)
+            else:
+                return f"获取通知列表失败: 返回数据格式错误，期望对象或列表但得到 {type(data).__name__}"
                 
-            if not data.get("results"):
+            if not results:
                 return f"通知列表（第{page}页）：暂无通知"
                 
-            result = f"通知列表（第{page}页，共{data.get('count', 0)}条）：\n"
-            for inform in data.get("results", []):
+            result = f"通知列表（第{page}页，共{count}条）：\n"
+            for inform in results:
                 if not isinstance(inform, dict):
                     continue
                 if 'title' not in inform or 'content' not in inform or 'create_time' not in inform:
