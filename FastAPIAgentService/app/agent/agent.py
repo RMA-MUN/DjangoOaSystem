@@ -1,7 +1,7 @@
 import os
 import json
 import asyncio
-from typing import List, Optional, AsyncGenerator
+from typing import List, Optional, AsyncGenerator, Dict, Any
 
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_community.chat_models import ChatTongyi
@@ -259,6 +259,78 @@ async def get_main_agent_stream_response(
         error_message = f"错误: {str(e)}"
         yield f"data: {json.dumps({'type': 'error', 'content': error_message, 'session_id': session_id}, ensure_ascii=False)}\n\n"
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+
+async def get_main_agent_response(
+        query: str,
+        session_id: str,
+        user_id: str
+) -> Dict[str, Any]:
+    """
+    获取主Agent响应, 非流式响应
+    
+    Args:
+        query: 用户查询内容
+        session_id: 会话ID
+        user_id: 用户ID
+    
+    Returns:
+        包含响应结果的字典
+    """
+    try:
+        logger.info(f"【主Agent非流式响应】开始处理请求，用户ID: {user_id}, 会话ID: {session_id}, 查询: {query}")
+
+        # 获取会话历史
+        history = await sm.session_manager.get_history(session_id, user_id)
+        logger.info(f"【主Agent非流式响应】获取会话历史成功，历史记录数: {len(history)}")
+
+        # 导入MainAgent
+        from app.agent.main_agent import MainAgent
+
+        # 创建主Agent实例
+        main_agent = MainAgent()
+
+        # 准备输入数据
+        input_data = {
+            "query": query,
+            "session_id": session_id,
+            "user_id": user_id,
+            "chat_history": history
+        }
+
+        # 调用主Agent处理请求
+        result = await main_agent.process(input_data)
+
+        # 获取最终响应
+        final_response = result.get("final_response", "抱歉，我无法理解您的请求。")
+        error = result.get("error", None)
+
+        # 添加到会话历史
+        await sm.session_manager.add_message(
+            session_id=session_id,
+            user_id=user_id,
+            user_message=query,
+            assistant_message=final_response
+        )
+        logger.info(f"【主Agent非流式响应】添加到会话历史成功")
+
+        # 返回结果
+        return {
+            "success": True,
+            "response": final_response,
+            "error": error,
+            "session_id": session_id
+        }
+
+    except Exception as e:
+        logger.error(f"【主Agent非流式响应】处理请求失败: {e}", exc_info=True)
+        error_message = f"错误: {str(e)}"
+        return {
+            "success": False,
+            "response": error_message,
+            "error": str(e),
+            "session_id": session_id
+        }
 
 
 async def get_agent_stream_response(
