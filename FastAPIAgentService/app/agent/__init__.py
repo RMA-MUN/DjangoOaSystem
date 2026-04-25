@@ -1,10 +1,15 @@
 """
 多智能体架构模块
 """
-
-# 注意：这里避免在 import-time 直接加载依赖大模型/向量库的模块，
-# 防止在仅做类型引用或工具脚本加载时触发沉重依赖/环境变量要求。
+from app.agent.agent_router import AgentRouter
 from app.agent.base import BaseAgent, AgentState
+from app.agent.knowledge_agent import KnowledgeAgent
+from app.agent.main_agent import MainAgent
+from app.agent.memory_agent import MemoryAgent
+from app.agent.param_extraction_agent import ParamExtractionAgent
+from app.agent.task_decomposer import TaskDecomposer
+from app.agent.tool_agent import ToolAgent
+from app.agent.workflow import run_agent_workflow
 
 __all__ = [
     "BaseAgent",
@@ -14,9 +19,12 @@ __all__ = [
     "ToolAgent",
     "KnowledgeAgent",
     "MemoryAgent",
+    "ParamExtractionAgent",
     "MainAgent",
     "run_agent_workflow",
 ]
+
+
 
 
 def __getattr__(name: str):
@@ -34,6 +42,9 @@ def __getattr__(name: str):
         return _T
     if name == "MemoryAgent":
         from app.agent.memory_agent import MemoryAgent as _T
+        return _T
+    if name == "ParamExtractionAgent":
+        from app.agent.param_extraction_agent import ParamExtractionAgent as _T
         return _T
     if name == "MainAgent":
         from app.agent.main_agent import MainAgent as _T
