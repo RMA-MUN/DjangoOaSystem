@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from langchain_core.messages import BaseMessage
 
 
@@ -61,6 +61,18 @@ class AgentState:
         self.agent_results: Dict[str, Any] = {}
         self.final_response: Optional[str] = None
         self.error: Optional[str] = None
+        # 新增字段
+        self.intent: Optional[str] = None
+        self.intent_confidence: float = 0.0
+        self.is_intent_valid: bool = False
+        self.target_tool: Optional[str] = None
+        self.required_params: List[str] = []
+        self.extracted_params: Dict[str, Any] = {}
+        self.param_retry_count: int = 0
+        self.max_param_retries: int = 3
+        self.task_status: str = "pending"
+        self.tool_result: Optional[str] = None
+        self.user_prompt: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -78,7 +90,19 @@ class AgentState:
             "selected_agent": self.selected_agent,
             "agent_results": self.agent_results,
             "final_response": self.final_response,
-            "error": self.error
+            "error": self.error,
+            # 新增字段
+            "intent": self.intent,
+            "intent_confidence": self.intent_confidence,
+            "is_intent_valid": self.is_intent_valid,
+            "target_tool": self.target_tool,
+            "required_params": self.required_params,
+            "extracted_params": self.extracted_params,
+            "param_retry_count": self.param_retry_count,
+            "max_param_retries": self.max_param_retries,
+            "task_status": self.task_status,
+            "tool_result": self.tool_result,
+            "user_prompt": self.user_prompt
         }
     
     @classmethod
@@ -100,4 +124,16 @@ class AgentState:
         state.agent_results = data.get("agent_results", {})
         state.final_response = data.get("final_response")
         state.error = data.get("error")
+        # 新增字段
+        state.intent = data.get("intent")
+        state.intent_confidence = data.get("intent_confidence", 0.0)
+        state.is_intent_valid = data.get("is_intent_valid", False)
+        state.target_tool = data.get("target_tool")
+        state.required_params = data.get("required_params", [])
+        state.extracted_params = data.get("extracted_params", {})
+        state.param_retry_count = data.get("param_retry_count", 0)
+        state.max_param_retries = data.get("max_param_retries", 3)
+        state.task_status = data.get("task_status", "pending")
+        state.tool_result = data.get("tool_result")
+        state.user_prompt = data.get("user_prompt")
         return state

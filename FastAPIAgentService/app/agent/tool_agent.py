@@ -90,7 +90,7 @@ class ToolAgent(BaseAgent):
         )
         
         # 创建提示词模板
-        system_prompt = load_prompt('main_prompt')
+        system_prompt = load_prompt('tool_agent_prompt')
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
