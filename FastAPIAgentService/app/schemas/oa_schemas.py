@@ -122,7 +122,6 @@ class AttendanceCreateRequest(BaseModel):
     start_time: datetime = Field(..., description="开始时间")
     end_time: datetime = Field(..., description="结束时间")
     reason: str = Field(..., description="请假原因")
-    responser: str = Field(..., description="审批人ID")
 
 
 class AttendanceUpdateRequest(BaseModel):

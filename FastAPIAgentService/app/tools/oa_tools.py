@@ -2,6 +2,7 @@
 智能体可以调用的工具，负责处理OA相关的任务
 """
 import os
+import json
 from datetime import datetime
 
 import httpx
@@ -17,6 +18,17 @@ from app.schemas.oa_schemas import (
     InformCreateRequest,
     InformUpdateRequest,
 )
+
+# 自定义JSON解析器，支持无引号键
+def parse_json_with_unquoted_keys(json_str):
+    """解析可能包含无引号键的JSON字符串"""
+    import re
+    # 将无引号键转换为有引号键
+    json_str = re.sub(r'(\w+):', r'"\1":', json_str)
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        return None
 
 load_dotenv()
 
@@ -120,27 +132,60 @@ async def get_attendance_records(token: str, who: Optional[str] = None) -> str:
         return f"获取考勤记录失败: {str(e)}"
 
 
-@tool(description="创建考勤记录，需要提供JWT token和考勤信息（type, start_time, end_time, reason, responser）")
+@tool(description="创建考勤记录，必须提供以下参数：1) JWT token (字符串)，2) type (整数，考勤类型ID)，3) start_time (字符串，开始时间，格式：2026-04-26T00:00:00)，4) end_time (字符串，结束时间，格式：2026-04-27T23:59:59)，5) reason (字符串，请假原因)。审批人由系统自动获取，无需传入。")
 async def create_attendance_record(
     token: str,
-    attendance_data: AttendanceCreateRequest
+    type: int = None,
+    start_time: str = None,
+    end_time: str = None,
+    reason: str = None,
+    attendance_data: dict = None
 ) -> str:
     """创建考勤记录工具"""
     try:
-        request_data = attendance_data.model_dump()
-        
-        # 将datetime对象转换为字符串格式
-        if isinstance(request_data.get('start_time'), datetime):
-            request_data['start_time'] = request_data['start_time'].isoformat()
-        if isinstance(request_data.get('end_time'), datetime):
-            request_data['end_time'] = request_data['end_time'].isoformat()
-        
+        # 优先使用单独的参数，如果没有则尝试从attendance_data中获取
+        if type is None and attendance_data:
+            type = attendance_data.get('type')
+        if start_time is None and attendance_data:
+            start_time = attendance_data.get('start_time')
+        if end_time is None and attendance_data:
+            end_time = attendance_data.get('end_time')
+        if reason is None and attendance_data:
+            reason = attendance_data.get('reason')
+
+        # 验证所有必需参数（不包括responser）
+        if any(param is None for param in [type, start_time, end_time, reason]):
+            return "创建考勤记录失败：缺少必需参数"
+
+        # 确保所有参数类型正确
+        try:
+            type = int(type)
+        except (ValueError, TypeError):
+            return "创建考勤记录失败：考勤类型必须是整数"
+
+        request_data = {
+            "type": type,
+            "start_time": start_time,
+            "end_time": end_time,
+            "reason": reason
+        }
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{DJANGO_API_BASE_URL}/Attendance/attendance/",
                 headers={"Authorization": f"Bearer {token}"},
                 json=request_data
             )
+            if response.status_code >= 400:
+                try:
+                    error_body = response.json()
+                except ValueError:
+                    error_body = response.text
+                logger.error(
+                    f"创建考勤记录失败: status={response.status_code}, request_data={request_data}, response={error_body}"
+                )
+                return f"创建考勤记录失败（{response.status_code}）：{error_body}"
+
             response.raise_for_status()
             data = response.json()
             return f"考勤记录创建成功！\nID: {data['id']}\n类型: {data['type']}\n状态: {data['status']}"
