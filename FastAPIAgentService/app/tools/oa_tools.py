@@ -30,6 +30,12 @@ def parse_json_with_unquoted_keys(json_str):
     except json.JSONDecodeError:
         return None
 
+# 确保请求数据为严格JSON格式
+def ensure_strict_json(data):
+    """确保数据为严格JSON格式"""
+    import json
+    return json.loads(json.dumps(data))
+
 load_dotenv()
 
 # Django API基础URL
@@ -132,13 +138,14 @@ async def get_attendance_records(token: str, who: Optional[str] = None) -> str:
         return f"获取考勤记录失败: {str(e)}"
 
 
-@tool(description="创建考勤记录，必须提供以下参数：1) JWT token (字符串)，2) type (整数，考勤类型ID)，3) start_time (字符串，开始时间，格式：2026-04-26T00:00:00)，4) end_time (字符串，结束时间，格式：2026-04-27T23:59:59)，5) reason (字符串，请假原因)。审批人由系统自动获取，无需传入。")
+@tool(description="创建考勤记录，必须提供以下参数：1) JWT token (字符串)，2) type (整数，考勤类型ID)，3) start_time (字符串，开始时间，格式：2024-01-01 09:00:00)，4) end_time (字符串，结束时间，格式：2024-01-02 18:00:00)，5) reason (字符串，请假原因)，6) responser (字符串，审批人ID)。")
 async def create_attendance_record(
     token: str,
     type: int = None,
     start_time: str = None,
     end_time: str = None,
     reason: str = None,
+    responser: str = None,
     attendance_data: dict = None
 ) -> str:
     """创建考勤记录工具"""
@@ -152,9 +159,11 @@ async def create_attendance_record(
             end_time = attendance_data.get('end_time')
         if reason is None and attendance_data:
             reason = attendance_data.get('reason')
+        if responser is None and attendance_data:
+            responser = attendance_data.get('responser')
 
-        # 验证所有必需参数（不包括responser）
-        if any(param is None for param in [type, start_time, end_time, reason]):
+        # 验证所有必需参数
+        if any(param is None for param in [type, start_time, end_time, reason, responser]):
             return "创建考勤记录失败：缺少必需参数"
 
         # 确保所有参数类型正确
@@ -163,11 +172,20 @@ async def create_attendance_record(
         except (ValueError, TypeError):
             return "创建考勤记录失败：考勤类型必须是整数"
 
+        # 确保时间格式正确
+        try:
+            # 检查时间格式是否为 "YYYY-MM-DD HH:MM:SS"
+            datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+            datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return "创建考勤记录失败：时间格式错误，正确格式为：YYYY-MM-DD HH:MM:SS"
+
         request_data = {
             "type": type,
             "start_time": start_time,
             "end_time": end_time,
-            "reason": reason
+            "reason": reason,
+            "responser": responser
         }
 
         async with httpx.AsyncClient() as client:
@@ -198,11 +216,34 @@ async def create_attendance_record(
 async def update_attendance_record(
     token: str,
     record_id: int,
-    update_data: AttendanceUpdateRequest
+    status: str = None,
+    comment: str = None,
+    update_data: AttendanceUpdateRequest = None
 ) -> str:
     """更新考勤记录状态工具"""
     try:
-        request_data = update_data.model_dump(exclude_unset=True)
+        # 优先使用单独的参数，如果没有则使用update_data
+        if status is None and update_data:
+            status = update_data.status
+        if comment is None and update_data:
+            comment = update_data.comment
+        
+        # 验证必需参数
+        if status is None:
+            return "更新考勤记录失败：缺少必需参数status"
+        
+        # 验证status值
+        if status not in ["approved", "rejected"]:
+            return "更新考勤记录失败：status值必须为approved或rejected"
+        
+        request_data = {
+            "status": status
+        }
+        if comment:
+            request_data["comment"] = comment
+        
+        # 确保请求数据为严格JSON格式
+        request_data = ensure_strict_json(request_data)
         
         async with httpx.AsyncClient() as client:
             response = await client.put(
@@ -343,11 +384,37 @@ async def get_informs(token: str, page: int = 1, page_size: int = 10) -> str:
 @tool(description="创建通知，需要提供JWT token和通知信息（title, content, public, department_ids）")
 async def create_inform(
     token: str,
-    inform_data: InformCreateRequest
+    title: str = None,
+    content: str = None,
+    public: bool = False,
+    department_ids: list = None,
+    inform_data: InformCreateRequest = None
 ) -> str:
     """创建通知工具"""
     try:
-        request_data = inform_data.model_dump(exclude_unset=True)
+        # 优先使用单独的参数，如果没有则使用inform_data
+        if title is None and inform_data:
+            title = inform_data.title
+        if content is None and inform_data:
+            content = inform_data.content
+        if inform_data:
+            public = inform_data.public
+            department_ids = inform_data.department_ids
+        
+        # 验证必需参数
+        if title is None or content is None:
+            return "创建通知失败：缺少必需参数title或content"
+        
+        request_data = {
+            "title": title,
+            "content": content,
+            "public": public
+        }
+        if department_ids:
+            request_data["department_ids"] = department_ids
+        
+        # 确保请求数据为严格JSON格式
+        request_data = ensure_strict_json(request_data)
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -367,11 +434,37 @@ async def create_inform(
 async def update_inform(
     token: str,
     inform_id: int,
-    update_data: InformUpdateRequest
+    title: str = None,
+    content: str = None,
+    public: bool = None,
+    department_ids: list = None,
+    update_data: InformUpdateRequest = None
 ) -> str:
     """更新通知工具"""
     try:
-        request_data = update_data.model_dump(exclude_unset=True)
+        # 优先使用单独的参数，如果没有则使用update_data
+        if title is None and update_data:
+            title = update_data.title
+        if content is None and update_data:
+            content = update_data.content
+        if public is None and update_data:
+            public = update_data.public
+        if department_ids is None and update_data:
+            department_ids = update_data.department_ids
+        
+        # 构建请求数据
+        request_data = {}
+        if title:
+            request_data["title"] = title
+        if content:
+            request_data["content"] = content
+        if public is not None:
+            request_data["public"] = public
+        if department_ids:
+            request_data["department_ids"] = department_ids
+        
+        # 确保请求数据为严格JSON格式
+        request_data = ensure_strict_json(request_data)
         
         async with httpx.AsyncClient() as client:
             response = await client.put(

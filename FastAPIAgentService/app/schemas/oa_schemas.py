@@ -118,10 +118,12 @@ class AttendanceCreateRequest(BaseModel):
     """考勤记录创建请求模型
     API: /Attendance/attendance/ (POST)
     """
+    title: str = Field(..., description="考勤标题")
     type: int = Field(..., description="考勤类型ID")
-    start_time: datetime = Field(..., description="开始时间")
-    end_time: datetime = Field(..., description="结束时间")
-    reason: str = Field(..., description="请假原因")
+    start_time: str = Field(..., description="开始时间，格式：YYYY-MM-DD HH:MM:SS")
+    end_time: str = Field(..., description="结束时间，格式：YYYY-MM-DD HH:MM:SS")
+    request_content: str = Field(..., description="请假原因")
+    responser: str = Field(..., description="审批人ID")
 
 
 class AttendanceUpdateRequest(BaseModel):
