@@ -27,7 +27,7 @@ load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-zdhqx2xbs&fd)&s-#&7mu%t%9l#fp8#6)zgvgkl+nu$w+ga6nl'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -91,9 +91,9 @@ WSGI_APPLICATION = 'DjangoOfficeProject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.mysql'),
-        'NAME': os.environ.get('DB_NAME', 'django_oa'),
-        'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'password'),
+        'NAME': os.environ.get('DB_NAME', 'your_db_name'),
+        'USER': os.environ.get('DB_USER', 'your_db_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'your_db_password'),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '3306'),
     }
@@ -104,9 +104,9 @@ EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.qq.com')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '3032747608@qq.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'towdlwmsfbaydggj') 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '3032747608@qq.com')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'your_email@qq.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'your_email_token')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'your_email@qq.com')
 
 # Celery 配置
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/1')
@@ -200,7 +200,7 @@ AUTH_USER_MODEL = 'officeAuth.officeuser'
 
 # JWT配置
 JWT_CONFIG = {
-    'SECRET_KEY': os.environ.get('SECRET_KEY', 'django-insecure-zdhqx2xbs&fd)&s-#&7mu%t%9l#fp8#6)zgvgkl+nu$w+ga6nl'),
+    'SECRET_KEY': os.environ.get('SECRET_KEY', 'MY_JWT_SECRET_KWY_FOR_USR_AND_I_JUST_WRITE_THIS'),
     'ALGORITHM': os.environ.get('ALGORITHM', 'HS256'),
     'ACCESS_TOKEN_EXPIRE_HOURS': 24,
 }
