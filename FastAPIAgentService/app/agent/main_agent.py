@@ -36,13 +36,14 @@ class MainAgent(BaseAgent):
             "param_extraction_agent": self.param_extraction_agent,
         }
     
-    async def process_input(self, user_input: str, session_id: str, user_id: str) -> Dict[str, Any]:
+    async def process_input(self, user_input: str, session_id: str, user_id: str, jwt_token: Optional[str] = None) -> Dict[str, Any]:
         """
         处理用户输入，协调工作流程
         
         :param user_input: 用户输入
         :param session_id: 会话ID
         :param user_id: 用户ID
+        :param jwt_token: JWT令牌
         :return: 处理结果
         """
         try:
@@ -51,6 +52,7 @@ class MainAgent(BaseAgent):
             state.user_input = user_input
             state.session_id = session_id
             state.user_id = user_id
+            state.jwt_token = jwt_token
             
             logger.info(f"【主Agent】开始处理请求，用户ID: {user_id}, 会话ID: {session_id}, 输入: {user_input[:50]}...")
             
@@ -148,7 +150,8 @@ class MainAgent(BaseAgent):
                         "task_description": subtask["description"],
                         "params": subtask.get("params", {}),
                         "session_id": state.session_id,
-                        "user_id": state.user_id
+                        "user_id": state.user_id,
+                        "jwt_token": state.jwt_token
                     }
                     
                     # 根据不同的Agent添加特定参数
@@ -387,6 +390,7 @@ class MainAgent(BaseAgent):
             user_input = input_data.get("user_input") or input_data.get("query")
             session_id = input_data.get("session_id")
             user_id = input_data.get("user_id")
+            jwt_token = input_data.get("jwt_token")
             
             if not all([user_input, session_id, user_id]):
                 return {
@@ -395,7 +399,7 @@ class MainAgent(BaseAgent):
                     "final_response": "处理失败：缺少必要参数"
                 }
             
-            result = await self.process_input(user_input, session_id, user_id)
+            result = await self.process_input(user_input, session_id, user_id, jwt_token)
             response = result.get("response", "处理完成")
             
             return {

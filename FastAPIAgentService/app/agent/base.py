@@ -54,6 +54,7 @@ class AgentState:
         self.user_input: Optional[str] = None
         self.session_id: Optional[str] = None
         self.user_id: Optional[str] = None
+        self.jwt_token: Optional[str] = None
         self.chat_history: Optional[list] = None
         self.task_type: Optional[str] = None
         self.task_subtasks: Optional[list] = None

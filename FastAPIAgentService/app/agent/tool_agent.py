@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime, timedelta
 
@@ -228,7 +228,7 @@ class ToolAgent(BaseAgent):
             "reason": str(reason)
         }
     
-    def _create_agent_executor(self):
+    def _create_agent_executor(self, jwt_token: Optional[str] = None):
         """创建Agent执行器"""
         from app.utils.prompt_loader import load_prompt
         
@@ -254,8 +254,12 @@ class ToolAgent(BaseAgent):
             tool_choice="auto"
         )
         
-        # 创建提示词模板
+        # 创建提示词模板，支持注入 jwt_token
         system_prompt = load_prompt('tool_agent_prompt')
+        
+        # 如果提供了 jwt_token，将其注入到系统Prompt中
+        if jwt_token:
+            system_prompt += f"\n\n你拥有以下身份验证令牌，在调用需要身份验证的工具时使用：\nJWT_TOKEN: {jwt_token}"
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
@@ -492,6 +496,11 @@ class ToolAgent(BaseAgent):
         try:
             task_description = input_data.get("task_description", "")
             params = input_data.get("params", {})
+            jwt_token = input_data.get("jwt_token")
+
+            # 如果 params 中没有 jwt_token，但 input_data 中有，则添加到 params
+            if jwt_token and "jwt_token" not in params:
+                params["jwt_token"] = jwt_token
 
             # 对“请假申请创建”场景走确定性调用，避免LLM工具参数JSON格式不稳定导致失败。
             deterministic_leave_args = self._build_leave_tool_args(params)
@@ -581,7 +590,7 @@ class ToolAgent(BaseAgent):
                         # 失败后继续走通用流程
 
             # 每次请求创建全新的 executor，避免跨会话状态污染
-            agent_executor = self._create_agent_executor()
+            agent_executor = self._create_agent_executor(jwt_token)
 
             # 构建工具调用输入：附带严格JSON参数块，减少模型生成非法arguments的概率
             tool_input = task_description

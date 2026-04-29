@@ -120,7 +120,6 @@ class TaskDecomposer(BaseAgent):
                 total_tasks = result.get("total_tasks")
                 subtasks = result.get("subtasks", [])
                 logger.info(f"【任务分解】成功分解任务: {main_task_type}, 子任务数: {total_tasks}")
-                
                 return {
                     "success": True,
                     "task_type": main_task_type,

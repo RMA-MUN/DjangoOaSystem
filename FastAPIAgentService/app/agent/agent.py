@@ -201,13 +201,15 @@ async def get_agent_response(
 async def get_main_agent_stream_response(
         query: str,
         session_id: str,
-        user_id: str
+        user_id: str,
+        jwt_token: Optional[str] = None
 ) -> AsyncGenerator[str, None]:
     """
     获取主Agent流式响应（协调多个子Agent）
     :param query: 用户查询
     :param session_id: 会话 ID
     :param user_id: 用户 ID
+    :param jwt_token: JWT令牌
     :return: 流式响应生成器
     """
     try:
@@ -228,7 +230,8 @@ async def get_main_agent_stream_response(
             "query": query,
             "session_id": session_id,
             "user_id": user_id,
-            "chat_history": history
+            "chat_history": history,
+            "jwt_token": jwt_token
         }
         
         # 先发送初始响应
