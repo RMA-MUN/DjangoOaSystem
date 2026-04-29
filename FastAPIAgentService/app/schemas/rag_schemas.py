@@ -6,6 +6,7 @@ class QueryRequest(BaseModel):
     """查询请求模型"""
     session_id: Optional[str] = None
     query: str
+    jwt_token: str = None
 
 
 class RAGRequest(BaseModel):

@@ -2,7 +2,7 @@ from typing import List
 import uuid
 
 from fastapi.routing import APIRouter
-from fastapi import UploadFile, File, Depends
+from fastapi import UploadFile, File, Depends, Header
 from fastapi.responses import StreamingResponse
 
 from app.agent.agent import get_agent_stream_response, get_main_agent_stream_response, get_main_agent_response
@@ -48,9 +48,9 @@ async def main_agent_query_stream(
     # 如果没有提供session_id，自动生成一个
     session_id = request.session_id or str(uuid.uuid4())
     
-    # 调用主Agent流式响应函数
+    # 调用主Agent流式响应函数，传递 jwt_token
     return StreamingResponse(
-        get_main_agent_stream_response(request.query, session_id, user_id),
+        get_main_agent_stream_response(request.query, session_id, user_id, request.jwt_token),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
