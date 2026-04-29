@@ -1,4 +1,5 @@
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -18,7 +19,7 @@ class RagService:
         self.prompt_template = PromptTemplate.from_template(self.prompt_text)
         self.chat_model = chat_model
         self.chain = self._init_chain()
-        self.hyde_prompt_template = PromptTemplate.from_template("基于以下问题，生成一个详细的假设性回答，我会根据你的这个假设性回答在向量数据库里检索文档：\n\n问题：{query}\n\n假设性回答：")
+        self.executor = ThreadPoolExecutor(max_workers=5)
 
     async def initialize_retriever(self):
         """
@@ -37,44 +38,21 @@ class RagService:
         )
         return chain
 
-    async def generate_hypothetical_document(self, query: str) -> str:
-        """
-        使用HyDE技术生成假设性文档
-        :param query: 用户查询
-        :return: 假设性文档内容
-        """
-        try:
-            hyde_chain = (
-                self.hyde_prompt_template
-                | self.chat_model
-                | StrOutputParser()
-            )
-            hypothetical_doc = await hyde_chain.ainvoke({"query": query})
-            logger.info(f"【HyDE】生成的假设性文档:\n{hypothetical_doc}")
-            return hypothetical_doc
-        except Exception as e:
-            logger.error(f"【HyDE】生成假设性文档失败: {e}")
-            return query
-
     async def retrieve_document(self, query: str) -> list:
-        """使用HyDE技术 从向量数据库里检索文档"""
+        """从向量数据库里检索文档"""
         try:
             # 确保检索器已初始化
             if self.retriever is None:
                 await self.initialize_retriever()
             
-            # 使用HyDE技术生成假设性文档
-            logger.info(f"【HyDE】开始处理查询: {query}")
-            hypothetical_doc = await self.generate_hypothetical_document(query)
-            
-            # 使用假设性文档进行检索
-            logger.info(f"【HyDE】使用假设性文档进行检索")
-            documents = await self.retriever.ainvoke(hypothetical_doc)
-            logger.info(f"【HyDE】检索到 {len(documents)} 个相关文档")
+            # 使用原始查询进行检索
+            logger.info(f"【RAG】开始处理查询: {query}")
+            documents = await self.retriever.ainvoke(query)
+            logger.info(f"【RAG】检索到 {len(documents)} 个相关文档")
             
             return documents
         except Exception as e:
-            logger.error(f"【HyDE】检索文档失败: {e}")
+            logger.error(f"【RAG】检索文档失败: {e}")
             return []
 
     async def reorder_documents(self, query: str, documents: list) -> list:
@@ -116,27 +94,43 @@ class RagService:
                     "summary": "抱歉，我没有找到相关的信息。"
                 }
 
-            # 使用分批总结策略
+            # 使用分批总结策略，在线程池中并行处理
             try:
                 # 对每个文档单独总结
                 individual_summaries = []
                 max_documents = 3  # 使用前3个最相关的文档
                 
-                for i, doc in enumerate(reordered_documents[:max_documents], 1):
-                    logger.info(f"【RAG】正在总结第{i}个文档")
-                    # 为单个文档构建上下文
-                    single_context = f"【参考资料{i}】:{doc}\n"
-                    # 生成单个文档的摘要
+                async def summarize_document(doc_index: int, doc_content: str):
+                    """单个文档总结任务"""
+                    logger.info(f"【RAG】正在总结第{doc_index}个文档")
+                    single_context = f"【参考资料{doc_index}】:{doc_content}\n"
                     import time
                     start_time = time.time()
                     single_summary = await asyncio.wait_for(
                         self.chain.ainvoke({"input": query, "context": single_context}),
-                        timeout=30.0  # 单个文档总结超时时间
+                        timeout=30.0
                     )
                     end_time = time.time()
-                    logger.info(f"【RAG】第{i}个文档总结耗时: {end_time - start_time:.2f}秒")
-                    individual_summaries.append(single_summary)
-                    logger.info(f"【RAG】第{i}个文档总结完成")
+                    logger.info(f"【RAG】第{doc_index}个文档总结耗时: {end_time - start_time:.2f}秒")
+                    return single_summary
+                
+                # 使用线程池并行执行文档总结
+                loop = asyncio.get_event_loop()
+                tasks = []
+                
+                for i, doc in enumerate(reordered_documents[:max_documents], 1):
+                    # 将每个文档总结任务提交到线程池
+                    task = loop.run_in_executor(
+                        self.executor,
+                        lambda idx=i, content=doc: asyncio.run(summarize_document(idx, content))
+                    )
+                    tasks.append(task)
+                
+                # 等待所有任务完成
+                individual_summaries = await asyncio.gather(*tasks)
+                
+                for i in range(len(individual_summaries)):
+                    logger.info(f"【RAG】第{i+1}个文档总结完成")
 
                 # 如果只有一个文档，直接返回其摘要
                 if len(individual_summaries) == 1:
