@@ -78,13 +78,41 @@ async def get_attendance_responser(token: str) -> str:
         return f"获取考勤审批人失败: {str(e)}"
 
 
-@tool(description="获取考勤记录列表，需要提供JWT token和查询范围参数who（可选值：requester, responser, leader, manager）")
-async def get_attendance_records(token: str, who: Optional[str] = None) -> str:
-    """获取考勤记录列表工具"""
+@tool(description="获取考勤记录列表，需要提供JWT token和查询范围参数who（可选值：requester, responser, leader, manager），以及分页参数page和page_size")
+async def get_attendance_records(
+    token: str,
+    who: Optional[str] = "requester",
+    page: int = 1,
+    page_size: int = 10
+) -> str:
+    """获取考勤记录列表工具
+    
+    Args:
+        token: JWT token
+        who: 查询范围，可选值：requester(申请人), responser(审批人), leader(部门领导), manager(管理员)
+        page: 页码，默认1
+        page_size: 每页大小，默认10
+        
+    Returns:
+        格式化的考勤记录列表字符串
+    """
     try:
-        params = {}
-        if who:
-            params["who"] = who
+        # 验证who参数的有效值
+        valid_who_values = ["requester", "responser", "leader", "manager"]
+        if who and who not in valid_who_values:
+            return f"获取考勤记录失败: who参数值无效，可选值为: {', '.join(valid_who_values)}"
+        
+        # 验证分页参数
+        if page < 1:
+            return "获取考勤记录失败: page参数必须大于0"
+        if page_size < 1 or page_size > 100:
+            return "获取考勤记录失败: page_size参数必须在1-100之间"
+        
+        params = {
+            "who": who,
+            "page": page,
+            "page_size": page_size
+        }
         
         async with httpx.AsyncClient() as client:
             response = await client.get(
@@ -95,31 +123,78 @@ async def get_attendance_records(token: str, who: Optional[str] = None) -> str:
             response.raise_for_status()
             data = response.json()
             
-            # 验证数据格式，处理可能的dict格式（如分页响应）
-            if isinstance(data, dict):
-                # 检查是否是分页响应格式
-                if 'results' in data and isinstance(data['results'], list):
-                    data = data['results']
-                else:
-                    return f"获取考勤记录失败: 返回数据格式错误，期望列表或包含results字段的对象，但得到 {type(data).__name__}"
-            elif not isinstance(data, list):
-                return f"获取考勤记录失败: 返回数据格式错误，期望列表但得到 {type(data).__name__}"
+            # 验证数据格式，处理分页响应格式
+            total_count = 0
+            results = []
             
-            if not data:
-                return "暂无考勤记录"
+            if isinstance(data, dict):
+                # 分页响应格式
+                if 'results' in data and isinstance(data['results'], list):
+                    results = data['results']
+                    # 优先使用total_count，如果不存在则使用count
+                    total_count = data.get('total_count', data.get('count', 0))
+                else:
+                    return f"获取考勤记录失败: 返回数据格式错误，期望包含results字段的对象，但得到 {type(data).__name__}"
+            elif isinstance(data, list):
+                # 非分页响应格式
+                results = data
+                total_count = len(data)
+            else:
+                return f"获取考勤记录失败: 返回数据格式错误，期望对象或列表但得到 {type(data).__name__}"
+            
+            if not results:
+                return f"考勤记录列表（第{page}页）：暂无考勤记录"
                 
-            result = "考勤记录列表：\n"
-            for record in data:
+            # 计算分页信息
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            result = f"考勤记录列表（第{page}/{total_pages}页，共{total_count}条）：\n"
+            
+            # 状态映射
+            status_mapping = {
+                1: "待审批",
+                2: "已通过",
+                3: "已拒绝",
+                "pending": "待审批",
+                "approved": "已通过",
+                "rejected": "已拒绝"
+            }
+            
+            for record in results:
                 # 验证每条记录的格式
                 if not isinstance(record, dict):
                     continue
-                if 'id' not in record or 'type' not in record or 'status' not in record:
+                if 'id' not in record or 'status' not in record:
                     continue
-                result += f"- ID: {record['id']}, 类型: {record['type']}, 状态: {record['status']}\n"
+                
+                # 提取考勤类型名称
+                attendance_type_name = ""
+                if 'attendance_type' in record and isinstance(record['attendance_type'], dict):
+                    attendance_type_name = record['attendance_type'].get('name', '')
+                
+                # 提取状态（支持数字和字符串）
+                status = record['status']
+                status_text = status_mapping.get(status, str(status))
+                
+                # 提取标题和申请内容
+                title = record.get('title', '')
+                request_content = record.get('request_content', '')
+                
+                # 构建记录信息
+                record_info = f"- ID: {record['id']}"
+                if title:
+                    record_info += f", 标题: {title}"
+                if attendance_type_name:
+                    record_info += f", 类型: {attendance_type_name}"
+                record_info += f", 状态: {status_text}\n"
+                
                 if 'start_time' in record and 'end_time' in record:
-                    result += f"  时间: {record['start_time']} 至 {record['end_time']}\n"
-                if record.get('reason'):
-                    result += f"  原因: {record['reason']}\n"
+                    record_info += f"  时间: {record['start_time']} 至 {record['end_time']}\n"
+                if request_content:
+                    record_info += f"  原因: {request_content}\n"
+                
+                result += record_info
+            
             return result
     except Exception as e:
         logger.error(f"获取考勤记录失败: {str(e)}")
@@ -355,7 +430,8 @@ async def get_informs(token: str, page: int = 1, page_size: int = 10) -> str:
                 # 检查是否是分页响应格式
                 if 'results' in data and isinstance(data['results'], list):
                     results = data['results']
-                    count = data.get('count', 0)
+                    # 优先使用total_count，如果不存在则使用count
+                    count = data.get('total_count', data.get('count', 0))
                 else:
                     return f"获取通知列表失败: 返回数据格式错误，期望包含results字段的对象，但得到 {type(data).__name__}"
             elif isinstance(data, list):
@@ -514,41 +590,6 @@ async def get_latest_informs(token: str) -> str:
     except Exception as e:
         logger.error(f"获取最新通知失败: {str(e)}")
         return f"获取最新通知失败: {str(e)}"
-
-
-@tool(description="获取最新考勤记录（最多10条），需要提供JWT token")
-async def get_latest_attendance(token: str) -> str:
-    """获取最新考勤记录工具"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{DJANGO_API_BASE_URL}/home/latest/attendance/",
-                headers={"Authorization": f"Bearer {token}"}
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            # 验证数据格式
-            if not isinstance(data, list):
-                return f"获取最新考勤记录失败: 返回数据格式错误，期望列表但得到 {type(data).__name__}"
-            
-            if not data:
-                return "暂无最新考勤记录"
-                
-            result = "最新考勤记录：\n"
-            for record in data:
-                # 验证每条记录的格式
-                if not isinstance(record, dict):
-                    continue
-                if 'id' not in record or 'type' not in record or 'status' not in record:
-                    continue
-                result += f"- ID: {record['id']}, 类型: {record['type']}, 状态: {record['status']}\n"
-                if 'start_time' in record and 'end_time' in record:
-                    result += f"  时间: {record['start_time']} 至 {record['end_time']}\n"
-            return result
-    except Exception as e:
-        logger.error(f"获取最新考勤记录失败: {str(e)}")
-        return f"获取最新考勤记录失败: {str(e)}"
 
 
 @tool(description="获取部门员工数量统计，需要提供JWT token")
